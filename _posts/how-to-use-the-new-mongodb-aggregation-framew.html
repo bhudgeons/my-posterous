@@ -1,0 +1,94 @@
+title: How to Use the New MongoDB Aggregation Framework Via Scala and Casbah
+date: 2012/02/22 06:27:00 -0800
+tags: [{"name":"scala casbah mongodb aggregation nosql","id":101817662}]
+author: Brandon Hudgeons
+alias: /how-to-use-the-new-mongodb-aggregation-framew
+
+<div>Note that this requires MongoDB 2.1+ (at the time of this writing, 2.1 is still the unstable release -- the aggregation framework will be in its first stable release in 2.2). &nbsp;@rit is adding the aggregation framework to the <a href="http://api.mongodb.org/scala/casbah/2.0/">Casbah DSL</a>, which will make this method superfluous, but it is a good example of how to implement a mongodb command in scala before Casbah or the <a href="http://api.mongodb.org/java/index.html">Java driver</a> support it.</div>
+<p />
+<div><div class="data type-scala">
+      <table class="lines" cellspacing="0" cellpadding="0">
+        <tr>
+          <td>
+            <pre class="line_numbers"><span rel="#L1" id="L1">1</span>
+<span rel="#L2" id="L2">2</span>
+<span rel="#L3" id="L3">3</span>
+<span rel="#L4" id="L4">4</span>
+<span rel="#L5" id="L5">5</span>
+<span rel="#L6" id="L6">6</span>
+<span rel="#L7" id="L7">7</span>
+<span rel="#L8" id="L8">8</span>
+<span rel="#L9" id="L9">9</span>
+<span rel="#L10" id="L10">10</span>
+<span rel="#L11" id="L11">11</span>
+<span rel="#L12" id="L12">12</span>
+<span rel="#L13" id="L13">13</span>
+<span rel="#L14" id="L14">14</span>
+<span rel="#L15" id="L15">15</span>
+<span rel="#L16" id="L16">16</span>
+<span rel="#L17" id="L17">17</span>
+<span rel="#L18" id="L18">18</span>
+<span rel="#L19" id="L19">19</span>
+<span rel="#L20" id="L20">20</span>
+<span rel="#L21" id="L21">21</span>
+<span rel="#L22" id="L22">22</span>
+<span rel="#L23" id="L23">23</span>
+<span rel="#L24" id="L24">24</span>
+<span rel="#L25" id="L25">25</span>
+<span rel="#L26" id="L26">26</span>
+<span rel="#L27" id="L27">27</span>
+<span rel="#L28" id="L28">28</span>
+<span rel="#L29" id="L29">29</span>
+<span rel="#L30" id="L30">30</span>
+<span rel="#L31" id="L31">31</span>
+<span rel="#L32" id="L32">32</span>
+<span rel="#L33" id="L33">33</span>
+<span rel="#L34" id="L34">34</span>
+<span rel="#L35" id="L35">35</span>
+<span rel="#L36" id="L36">36</span>
+<span rel="#L37" id="L37">37</span>
+<span rel="#L38" id="L38">38</span>
+<span rel="#L39" id="L39">39</span>
+<span rel="#L40" id="L40">40</span>
+<span rel="#L41" id="L41">41</span>
+<span rel="#L42" id="L42">42</span>
+<span rel="#L43" id="L43">43</span>
+<span rel="#L44" id="L44">44</span>
+<span rel="#L45" id="L45">45</span>
+<span rel="#L46" id="L46">46</span>
+<span rel="#L47" id="L47">47</span>
+<span rel="#L48" id="L48">48</span>
+<span rel="#L49" id="L49">49</span>
+<span rel="#L50" id="L50">50</span>
+<span rel="#L51" id="L51">51</span>
+<span rel="#L52" id="L52">52</span>
+<span rel="#L53" id="L53">53</span>
+<span rel="#L54" id="L54">54</span>
+<span rel="#L55" id="L55">55</span>
+<span rel="#L56" id="L56">56</span>
+<span rel="#L57" id="L57">57</span>
+<span rel="#L58" id="L58">58</span>
+<span rel="#L59" id="L59">59</span>
+<span rel="#L60" id="L60">60</span>
+<span rel="#L61" id="L61">61</span>
+<span rel="#L62" id="L62">62</span>
+<span rel="#L63" id="L63">63</span>
+<span rel="#L64" id="L64">64</span>
+<span rel="#L65" id="L65">65</span>
+<span rel="#L66" id="L66">66</span>
+<span rel="#L67" id="L67">67</span>
+<span rel="#L68" id="L68">68</span>
+<span rel="#L69" id="L69">69</span>
+<span rel="#L70" id="L70">70</span>
+<span rel="#L71" id="L71">71</span>
+<span rel="#L72" id="L72">72</span>
+</pre>
+          </td>
+          <td width="100%">
+                <div class="highlight"><pre /><div class="line" id="LC1"><span class="k">import</span> <span class="nn">com.mongodb.casbah.Imports._</span></div><div class="line" id="LC2"><br /></div><div class="line" id="LC3"><span class="cm">/*</span></div><div class="line" id="LC4"><span class="cm"> * Simple test of the MongoDB Aggregation Framework via Casbah</span></div><div class="line" id="LC5"><span class="cm"> * </span></div><div class="line" id="LC6"><span class="cm"> * [Note: only works on MongoDB 2.1+]</span></div><div class="line" id="LC7"><span class="cm"> * </span></div><div class="line" id="LC8"><span class="cm"> * The &quot;students&quot; collection consists of student test score records that [simplified] look like this:</span></div><div class="line" id="LC9"><span class="cm"> * </span></div><div class="line" id="LC10"><span class="cm">   {</span></div><div class="line" id="LC11"><span class="cm">	&quot;_id&quot; : ObjectId(&quot;4f436e581a8819c9391c9e77&quot;),</span></div><div class="line" id="LC12"><span class="cm">	&quot;id&quot; : &quot;1000000321&quot;,</span></div><div class="line" id="LC13"><span class="cm">	&quot;lname&quot; : &quot;Simpson&quot;,</span></div><div class="line" id="LC14"><span class="cm">	&quot;fname&quot; : &quot;Bobby&quot;,</span></div><div class="line" id="LC15"><span class="cm">	&quot;scores&quot; : [</span></div><div class="line" id="LC16"><span class="cm">		{</span></div><div class="line" id="LC17"><span class="cm">			&quot;score&quot; : 14,</span></div><div class="line" id="LC18"><span class="cm">			&quot;dname&quot; : &quot;ACADEMICS PLUS SCHOOL DISTRICT&quot;,</span></div><div class="line" id="LC19"><span class="cm">			&quot;sname&quot; : &quot;Test School 6040702&quot;,</span></div><div class="line" id="LC20"><span class="cm">			&quot;tyear&quot; : &quot;2007&quot;,</span></div><div class="line" id="LC21"><span class="cm">			&quot;tname&quot; : &quot;Lit_Scale&quot;,</span></div><div class="line" id="LC22"><span class="cm">			&quot;grade&quot; : &quot;3&quot;</span></div><div class="line" id="LC23"><span class="cm">		},</span></div><div class="line" id="LC24"><span class="cm">		{</span></div><div class="line" id="LC25"><span class="cm">			&quot;score&quot; : 557,</span></div><div class="line" id="LC26"><span class="cm">			&quot;dname&quot; : &quot;ACADEMICS PLUS SCHOOL DISTRICT&quot;,</span></div><div class="line" id="LC27"><span class="cm">			&quot;sname&quot; : &quot;Test School 6040702&quot;,</span></div><div class="line" id="LC28"><span class="cm">			&quot;tyear&quot; : &quot;2007&quot;,</span></div><div class="line" id="LC29"><span class="cm">			&quot;tname&quot; : &quot;Lit_Perf&quot;,</span></div><div class="line" id="LC30"><span class="cm">			&quot;grade&quot; : &quot;3&quot;</span></div><div class="line" id="LC31"><span class="cm">		},</span></div><div class="line" id="LC32"><span class="cm">		{</span></div><div class="line" id="LC33"><span class="cm">			&quot;score&quot; : 15,</span></div><div class="line" id="LC34"><span class="cm">			&quot;dname&quot; : &quot;ACADEMICS PLUS SCHOOL DISTRICT&quot;,</span></div><div class="line" id="LC35"><span class="cm">			&quot;sname&quot; : &quot;Test School 6040702&quot;,</span></div><div class="line" id="LC36"><span class="cm">			&quot;tyear&quot; : &quot;2008&quot;,</span></div><div class="line" id="LC37"><span class="cm">			&quot;tname&quot; : &quot;Lit_Scale&quot;,</span></div><div class="line" id="LC38"><span class="cm">			&quot;grade&quot; : &quot;4&quot;</span></div><div class="line" id="LC39"><span class="cm">		}</span></div><div class="line" id="LC40"><span class="cm">	]</span></div><div class="line" id="LC41"><span class="cm">}</span></div><div class="line" id="LC42"><span class="cm"> *</span></div><div class="line" id="LC43"><span class="cm"> * This example unwinds the scores and groups them</span></div><div class="line" id="LC44"><span class="cm"> * to determine the unique values of the tests, years and grades fields.</span></div><div class="line" id="LC45"><span class="cm"> * </span></div><div class="line" id="LC46"><span class="cm"> */</span></div><div class="line" id="LC47"><br /></div><div class="line" id="LC48"><span class="k">object</span> <span class="nc">AggregationFrameworkTest</span> <span class="k">extends</span> <span class="nc">App</span> <span class="o">{</span></div><div class="line" id="LC49">&nbsp;&nbsp;<span class="k">val</span> <span class="n">mongoConn</span> <span class="k">=</span> <span class="nc">MongoConnection</span><span class="o">()</span></div><div class="line" id="LC50">&nbsp;&nbsp;<span class="k">val</span> <span class="n">db</span> <span class="k">=</span> <span class="n">mongoConn</span><span class="o">(</span><span class="s">&quot;hivedbmig&quot;</span><span class="o">)</span></div><div class="line" id="LC51"><br /></div><div class="line" id="LC52">&nbsp;&nbsp;<span class="k">def</span> <span class="n">aggregationResult</span><span class="o">(</span><span class="n">collectionName</span><span class="k">:</span><span class="kt">String</span><span class="o">,</span> <span class="n">pipeline</span><span class="k">:</span> <span class="kt">MongoDBList</span><span class="o">)</span> <span class="k">=</span> <span class="o">{</span></div><div class="line" id="LC53">&nbsp;&nbsp;&nbsp;&nbsp;<span class="n">db</span><span class="o">.</span><span class="n">command</span><span class="o">(</span><span class="nc">MongoDBObject</span><span class="o">(</span><span class="s">&quot;aggregate&quot;</span> <span class="o">-&gt;</span> <span class="n">collectionName</span><span class="o">,</span> <span class="s">&quot;pipeline&quot;</span> <span class="o">-&gt;</span> <span class="n">pipeline</span><span class="o">)).</span><span class="n">get</span><span class="o">(</span><span class="s">&quot;result&quot;</span><span class="o">)</span></div><div class="line" id="LC54">&nbsp;&nbsp;<span class="o">}</span></div><div class="line" id="LC55"><br /></div><div class="line" id="LC56">&nbsp;&nbsp;<span class="k">val</span> <span class="n">pipebuilder</span> <span class="k">=</span> <span class="nc">MongoDBList</span><span class="o">.</span><span class="n">newBuilder</span></div><div class="line" id="LC57">&nbsp;&nbsp;<span class="n">pipebuilder</span> <span class="o">+=</span> <span class="nc">MongoDBObject</span><span class="o">(</span><span class="s">&quot;$unwind&quot;</span> <span class="o">-&gt;</span> <span class="s">&quot;$scores&quot;</span><span class="o">)</span></div><div class="line" id="LC58">&nbsp;&nbsp;<span class="n">pipebuilder</span> <span class="o">+=</span> <span class="nc">MongoDBObject</span><span class="o">(</span><span class="s">&quot;$group&quot;</span> <span class="o">-&gt;</span> <span class="nc">MongoDBObject</span><span class="o">(</span></div><div class="line" id="LC59">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="s">&quot;_id&quot;</span> <span class="o">-&gt;</span> <span class="s">&quot;all&quot;</span><span class="o">,</span> <span class="c1">// constant, so we&#39;ll just create one bucket</span></div><div class="line" id="LC60">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="s">&quot;tests&quot;</span> <span class="o">-&gt;</span> <span class="nc">MongoDBObject</span><span class="o">(</span><span class="s">&quot;$addToSet&quot;</span> <span class="o">-&gt;</span> <span class="s">&quot;$scores.tname&quot;</span><span class="o">),</span> </div><div class="line" id="LC61">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="s">&quot;years&quot;</span> <span class="o">-&gt;</span> <span class="nc">MongoDBObject</span><span class="o">(</span><span class="s">&quot;$addToSet&quot;</span> <span class="o">-&gt;</span> <span class="s">&quot;$scores.tyear&quot;</span><span class="o">),</span> </div><div class="line" id="LC62">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="s">&quot;grades&quot;</span> <span class="o">-&gt;</span> <span class="nc">MongoDBObject</span><span class="o">(</span><span class="s">&quot;$addToSet&quot;</span> <span class="o">-&gt;</span> <span class="s">&quot;$scores.grade&quot;</span><span class="o">)))</span></div><div class="line" id="LC63">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</div><div class="line" id="LC64">&nbsp;&nbsp;<span class="k">val</span> <span class="n">pipeline</span> <span class="k">=</span> <span class="n">pipebuilder</span><span class="o">.</span><span class="n">result</span><span class="o">()</span></div><div class="line" id="LC65">&nbsp;&nbsp;</div><div class="line" id="LC66">&nbsp;&nbsp;<span class="n">aggregationResult</span><span class="o">(</span><span class="s">&quot;students&quot;</span><span class="o">,</span> <span class="n">pipeline</span><span class="o">)</span> <span class="k">match</span> <span class="o">{</span></div><div class="line" id="LC67">&nbsp;&nbsp;&nbsp;&nbsp;<span class="k">case</span> <span class="n">list</span><span class="k">:</span> <span class="kt">BasicDBList</span> <span class="o">=&gt;</span> <span class="n">list</span><span class="o">.</span><span class="n">foreach</span><span class="o">(</span><span class="n">println</span><span class="o">(</span><span class="k">_</span><span class="o">))</span></div><div class="line" id="LC68">&nbsp;&nbsp;&nbsp;&nbsp;<span class="k">case</span> <span class="k">_</span> <span class="k">=&gt;</span> <span class="n">println</span><span class="o">(</span><span class="s">&quot;didn&#39;t work&quot;</span><span class="o">)</span></div><div class="line" id="LC69">&nbsp;&nbsp;<span class="o">}</span></div><div class="line" id="LC70">&nbsp;&nbsp;<span class="c1">// { &quot;_id&quot; : &quot;all&quot; , &quot;tests&quot; : [ &quot;ACT_Comp&quot; , &quot;FPQ4_Score&quot; , &quot;Lit_Growth&quot; , &quot;Math_Scale&quot; , &quot;Bio_Scale&quot; , &quot;Geo_Scale&quot; , &quot;Geo_Growth&quot; , &quot;Math_Growth&quot; , &quot;Alg_Scale&quot; , &quot;ACT_Math&quot; , &quot;ACT_Eng&quot; , &quot;Alg_Growth&quot; , &quot;Sci_Scale&quot; , &quot;Lit_Scale&quot;] , &quot;years&quot; : [ &quot;2011&quot; , &quot;2006&quot; , &quot;2008&quot; , &quot;2009&quot; , &quot;2007&quot; , &quot;2010&quot;] , &quot;grades&quot; : [ &quot;5&quot; , &quot;4&quot; , &quot;7&quot; , &quot;11&quot; , &quot;6&quot; , &quot;3&quot; , &quot;8&quot;]}</span></div><div class="line" id="LC71"><br /></div><div class="line" id="LC72"><span class="o">}</span></div></pre></div>
+          </td>
+        </tr>
+      </table>
+  </div></div>
+
+

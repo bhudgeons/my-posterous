@@ -1,0 +1,23 @@
+title: Thoughts on Erjang
+date: 2009/12/07 14:33:00 -0800
+tags: []
+author: Brandon Hudgeons
+alias: /thoughts-on-erjang
+
+<p>I've had the good fortune to make contact with two very smart people: Jonas Bon&eacute;r and Debasish Ghosh. &nbsp;One of the topics we've been discussing is <a href="http://wiki.github.com/krestenkrab/erjang">Erjang</a>.</p>
+<p>Jonas and Debasish agree that while the project is an interesting experiment (which it is) and a great way to learn Erlang (which I'm sure it is), its usefulness might end there. &nbsp;They may be right. &nbsp;Eventually, of course, a robust and complete Erlang-to-Java-Class-File solution might be able to give you these nice things:</p>
+<ul>
+<li>For people who want to integrate Java and Erlang (and there are <a href="http://www.theserverside.com/tt/articles/article.tss?l=IntegratingJavaandErlang">such people</a>), byte code&nbsp;compatibility&nbsp;would be very cool.</li>
+<li>Developers could leverage legacy Java libraries.</li>
+<li>Existing deployment environments that use Java could use Erlang without involving IT.</li>
+</ul>
+<div>The last point is probably under-appreciated by many folks who aren't operating inside a company where an IT organization, separate from the dev organization, has to have meetings, conferences, discussions and other bureaucratic processes to determine what software can be installed on both servers and desktops. &nbsp;Thankfully, here at Enspire, we don't have that problem. &nbsp;We do, however, work with companies (especially large financial institutions) where installation of software on any machine is a huge ordeal. &nbsp;If you can compile to Java class files (or J2EE war files), things go smoothly -- they needn't even know that a developer used an alternate programming language. &nbsp;This approach will continue to help Scala and JRuby gain more traction than they would otherwise.</div>
+<p />
+<div>Here at Enspire, one of my edicts for our development is that each project's repository must contain a complete sandbox of the project. &nbsp;In other words, you should be able to check out the repository and immediately be able to run the full set of project tests locally on your machine without installing any other software (other than the standard set of software that we require on all machines). &nbsp;It isn't difficult to install Erlang on a Windows machine, but installing it on 45 machines is a pain. &nbsp;There may be an occasion when I or a member of my team think that Erlang might be a good fit for a particular development task. &nbsp;To use Erlang, I would either have to figure out how to include it in the project sandbox or make it a part of our standard development setup, requiring everyone on the team to install it and making it a part of our new machine install procedure. &nbsp;This isn't impossible, but is just painful enough that I'm not likely use it unless we need it across many projects.</div>
+<p />
+<div>Just as we often use HSQLDB for local testing and Postgres for production, it would be really nice to have Erjang for local testing and BEAM for production. &nbsp;Even if Erjang never reaches the performance of BEAM runtime, it would certainly be good enough to run a local test suite.</div>
+<p />
+<div>Will this come to pass, and will the effort be worth these benefits? &nbsp;I don't know, but it remains an interesting project. &nbsp;</div>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
